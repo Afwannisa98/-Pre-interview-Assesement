@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title></title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .action-btn {
+            cursor: pointer;
+            color: blue;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+<table id="user-evaluation-table">
+    <thead>
+    <tr>
+        <th>Name</th>
+        <th>Age</th>
+        <th>Address</th>
+        <th>Working Status</th>
+        <th>Action</th>
+    </tr>
+    </thead>
+    <tbody>
+
+    </tbody>
+</table>
+
+<script>
+    $(document).ready(function () {
+        $.ajax({
+            url: "evaluation-20190711.json",
+            type: "GET",
+            dataType: "json",
+            success: function (jsonData) {
+                var tableBody = $("#user-evaluation-table tbody");
+
+                jsonData.data.forEach(function (user) {
+                    var row = $("<tr>");
+                    row.append("<td>" + user.name + "</td>");
+                    row.append("<td>" + calculateAge(user.date_of_birth) + " years</td>");
+                    row.append("<td>" + user.address + "</td>");
+                    row.append("<td>" + (user.working_status ? "Yes" : "No") + "</td>");
+                    row.append("<td class='action-btn' onclick='exportToCsv(" +
+                        JSON.stringify(user.evaluation) + ")'>Export CSV</td>");
+
+                    tableBody.append(row);
+                });
+            },
+            error: function (xhr, status, error) {
+                console.error("Error loading JSON file:", status, error);
+            }
+        });
+    });
+
+    function calculateAge(dateOfBirth) {
+        var birthYear = new Date(dateOfBirth).getFullYear();
+        var currentYear = new Date().getFullYear();
+        return currentYear - birthYear;
+    }
+
+    function exportToCsv(evaluation) {
+        var csvContent = "Title,Test,Score,Evaluated At\n";
+        evaluation.score.forEach(function (test) {
+            var testTitle = evaluation.title;
+            var testName = Object.keys(test)[0];
+            var testScore = Object.values(test)[0];
+            var evaluatedAt = new Date(evaluation.created_at).toLocaleString("en-US", {
+                timeZone: "Asia/Kuala_Lumpur"
+            });
+            csvContent += `${testTitle},${testName},${testScore},${evaluatedAt}\n`;
+        });
+
+        var blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        saveAs(blob, "user_evaluation_export.csv");
+    }
+</script>
+
+</body>
+</html>
